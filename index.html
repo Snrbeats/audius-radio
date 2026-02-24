@@ -106,7 +106,7 @@
     .artwork {
       width: 220px;
       height: 220px;
-      border-radius: 15px;
+      border-radius: 50%;
       margin: 0 auto 15px;
       background: linear-gradient(135deg, #7b2ff7, #00d4ff);
       display: flex;
@@ -115,6 +115,17 @@
       font-size: 4rem;
       overflow: hidden;
       box-shadow: 0 10px 40px rgba(0,212,255,0.3);
+      transition: border-radius 0.5s ease;
+    }
+    
+    .artwork.playing {
+      border-radius: 50%;
+      animation: spin 10s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
     
     .artwork img {
@@ -390,6 +401,7 @@
       const embedSrc = track.embedUrl + '?autoplay=true';
       document.getElementById('playerFrame').src = embedSrc;
       document.getElementById('playerFrame').classList.add('player-visible');
+      document.getElementById('artwork').classList.add('playing');
       
       renderPlaylist();
       
@@ -423,6 +435,7 @@
     function togglePlay() {
       isPlaying = !isPlaying;
       document.getElementById('playBtn').textContent = isPlaying ? '⏸️' : '▶️';
+      document.getElementById('artwork').classList.toggle('playing', isPlaying);
       
       if (isPlaying) {
         trackStartTime = Date.now() - (parseFloat(document.getElementById('progress').style.width || 0) / 100 * trackDuration * 1000);
