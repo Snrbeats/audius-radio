@@ -140,7 +140,10 @@
         <div class="status" id="status">Ready</div>
         <div class="track-count" id="trackCount"></div>
         <div class="frame-wrap">
-          <iframe id="playerFrame" class="player-frame" allow="autoplay" allowfullscreen></iframe>
+          <iframe id="playerFrame" class="player-frame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <div id="startOverlay" style="display:none; margin-top:10px; text-align:center;">
+          <button id="startBtn" class="pill-btn" style="padding:10px 14px;">▶️ Tap to start audio</button>
+        </div>
         </div>
       </div>
 
@@ -170,6 +173,15 @@
       if (stored) return stored;
       if (window.AUDIUS_API_KEY) return window.AUDIUS_API_KEY;
       return null;
+    }
+
+    function showStartOverlay() {
+      const overlay = document.getElementById('startOverlay');
+      if (overlay) overlay.style.display = 'block';
+    }
+    function hideStartOverlay() {
+      const overlay = document.getElementById('startOverlay');
+      if (overlay) overlay.style.display = 'none';
     }
 
     async function fetchAudiusFallback() {
@@ -350,9 +362,16 @@
 
       const autoplayParam = track.embedUrl.includes('?') ? '&autoplay=true' : '?autoplay=true';
       const embedSrc = track.embedUrl + autoplayParam;
-      document.getElementById('playerFrame').src = embedSrc;
-      document.getElementById('playerFrame').classList.add('player-visible');
+      const frame = document.getElementById('playerFrame');
+      frame.src = embedSrc;
+      frame.classList.add('player-visible');
+      frame.onload = () => hideStartOverlay();
       document.getElementById('artwork').classList.add('playing');
+      hideStartOverlay();
+      setTimeout(() => {
+        // if still no play, show overlay for user gesture
+        if (!isPlaying) showStartOverlay();
+      }, 1200);
 
       renderPlaylist();
       trackDuration = track.duration || 180;
@@ -467,6 +486,15 @@
       isShuffle = !isShuffle;
       document.getElementById('shuffleBtn').classList.toggle('active', isShuffle);
     };
+
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn) {
+      startBtn.onclick = () => {
+        hideStartOverlay();
+        // re-trigger current track to satisfy autoplay gesture
+        playTrack(currentIndex, true);
+      };
+    }
 
     document.getElementById('loopBtn').onclick = () => {
       loopMode = !loopMode;
