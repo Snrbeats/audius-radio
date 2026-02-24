@@ -191,18 +191,21 @@
     }
 
     async function loadPlaylist() {
+      const loadingEl = document.getElementById('loading');
       try {
-        const res = await fetch('playlist.json');
+        const res = await fetch(new URL('playlist.json', location.href).toString(), { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (!Array.isArray(json) || !json.length) throw new Error('No tracks');
         tracks = json;
         filteredTracks = tracks;
-        document.getElementById('loading').style.display = 'none';
+        loadingEl.style.display = 'none';
         document.getElementById('player').style.display = 'block';
         renderPlaylist();
         playTrack(currentIndex);
       } catch (err) {
-        document.getElementById('loading').innerHTML = '<p>Error loading playlist</p>';
+        console.error('Playlist load error', err);
+        loadingEl.innerHTML = `<p>Error loading playlist: ${err?.message || err}</p>`;
       }
     }
 
