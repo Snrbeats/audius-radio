@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎙️ AI Radio - Curated</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff6b9d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #333;
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .mood-selector {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    
+    .mood-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    
+    .mood-btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+    
+    .mood-btn.active {
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+      border: none;
+    }
+    
+    .now-playing {
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      padding: 25px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .np-label {
+      color: #00d4ff;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+    }
+    
+    .artwork {
+      width: 220px;
+      height: 220px;
+      border-radius: 15px;
+      margin: 0 auto 15px;
+      background: linear-gradient(135deg, #7b2ff7, #00d4ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,212,255,0.3);
+    }
+    
+    .artwork img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .track-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      word-break: break-word;
+    }
+    
+    .artist {
+      color: #888;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+    
+    .progress {
+      height: 100%;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+      width: 0%;
+      transition: width 1s linear;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    
+    .control-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+    }
+    
+    .control-btn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.1);
+    }
+    
+    .control-btn.play {
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+      width: 60px;
+      height: 60px;
+    }
+    
+    .player-frame {
+      width: 100%;
+      height: 130px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 15px;
+      background: #000;
+      opacity: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+    
+    .player-visible {
+      opacity: 1;
+      position: relative;
+      pointer-events: auto;
+    }
+    
+    .playlist {
+      background: rgba(255,255,255,0.03);
+      border-radius: 15px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .playlist h3 {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+    
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .playlist-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .playlist-item.playing {
+      background: rgba(0, 212, 255, 0.1);
+      border-left: 3px solid #00d4ff;
+    }
+    
+    .playlist-item .num {
+      color: #555;
+      width: 25px;
+      font-size: 0.9rem;
+    }
+    
+    .playlist-item .info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .playlist-item .title {
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .playlist-item .artist-name {
+      color: #666;
+      font-size: 0.85rem;
+    }
+    
+    .status {
+      text-align: center;
+      color: #555;
+      margin-top: 10px;
+    }
+    
+    .status.live {
+      color: #00d4ff;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .track-count {
+      text-align: center;
+      color: #444;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎙️ AI Radio</h1>
+      <p class="subtitle">100+ curated tracks • Auto-playing</p>
+    </header>
+    
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Loading playlist...</p>
+    </div>
+    
+    <div id="player" style="display:none">
+      <div class="now-playing">
+        <div class="np-label">🎧 NOW PLAYING</div>
+        <div class="artwork" id="artwork">🎵</div>
+        <div class="track-title" id="title">-</div>
+        <div class="artist" id="artist">-</div>
+        <div class="progress-bar">
+          <div class="progress" id="progress"></div>
+        </div>
+        <iframe id="playerFrame" class="player-frame" allow="autoplay" allowfullscreen></iframe>
+      </div>
+      
+      <div class="controls">
+        <button class="control-btn" onclick="prevTrack()">⏮️</button>
+        <button class="control-btn play" onclick="togglePlay()" id="playBtn">▶️</button>
+        <button class="control-btn" onclick="nextTrack()">⏭️</button>
+      </div>
+      
+      <div class="status" id="status">Ready</div>
+      <div class="track-count" id="trackCount"></div>
+      
+      <div class="playlist">
+        <h3>UP NEXT</h3>
+        <div id="playlist"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Curated playlist loaded dynamically
+    let tracks = [];
+    let currentIndex = 0;
+    let isPlaying = false;
+    let progressInterval = null;
+    let trackStartTime = 0;
+    let trackDuration = 0;
+    
+    // Load playlist from JSON
+    async function loadPlaylist() {
+      try {
+        const res = await fetch('/playlist.json');
+        tracks = await res.json();
+        
+        if (tracks.length === 0) throw new Error('No tracks');
+        
+        // Shuffle
+        tracks = shuffle([...tracks]);
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('player').style.display = 'block';
+        
+        renderPlaylist();
+        playTrack(0);
+        
+      } catch (err) {
+        document.getElementById('loading').innerHTML = '<p>Error loading playlist</p>';
+      }
+    }
+    
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    
+    function renderPlaylist() {
+      const container = document.getElementById('playlist');
+      container.innerHTML = tracks.map((track, i) => `
+        <div class="playlist-item ${i === currentIndex ? 'playing' : ''}" onclick="playTrack(${i})">
+          <span class="num">${i + 1}</span>
+          <div class="info">
+            <div class="title">${track.title}</div>
+            <div class="artist-name">${track.artist}</div>
+          </div>
+        </div>
+      `).join('');
+      
+      document.getElementById('trackCount').textContent = `${tracks.length} tracks • Track ${currentIndex + 1}`;
+    }
+    
+    function playTrack(index) {
+      currentIndex = index;
+      const track = tracks[index];
+      
+      // Update UI
+      document.getElementById('title').textContent = track.title;
+      document.getElementById('artist').textContent = track.artist;
+      
+      if (track.artwork) {
+        document.getElementById('artwork').innerHTML = '<img src="' + track.artwork + '" alt="Artwork">';
+      } else {
+        document.getElementById('artwork').textContent = '🎵';
+      }
+      
+      // Set embed - add autoplay parameter
+      const embedSrc = track.embedUrl + '?autoplay=true';
+      document.getElementById('playerFrame').src = embedSrc;
+      document.getElementById('playerFrame').classList.add('player-visible');
+      
+      renderPlaylist();
+      
+      // Start progress
+      trackDuration = track.duration || 180;
+      trackStartTime = Date.now();
+      startProgress();
+      
+      // Auto-advance after duration (fallback)
+      isPlaying = true;
+      updateStatus();
+    }
+    
+    function startProgress() {
+      if (progressInterval) clearInterval(progressInterval);
+      
+      progressInterval = setInterval(() => {
+        if (!isPlaying) return;
+        
+        const elapsed = (Date.now() - trackStartTime) / 1000;
+        const pct = Math.min((elapsed / trackDuration) * 100, 100);
+        document.getElementById('progress').style.width = pct + '%';
+        
+        // Auto-advance when track "ends" (approximate)
+        if (elapsed >= trackDuration - 1) {
+          nextTrack();
+        }
+      }, 1000);
+    }
+    
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').textContent = isPlaying ? '⏸️' : '▶️';
+      
+      if (isPlaying) {
+        trackStartTime = Date.now() - (parseFloat(document.getElementById('progress').style.width || 0) / 100 * trackDuration * 1000);
+        startProgress();
+      } else {
+        if (progressInterval) clearInterval(progressInterval);
+      }
+      
+      updateStatus();
+    }
+    
+    function nextTrack() {
+      if (currentIndex < tracks.length - 1) {
+        playTrack(currentIndex + 1);
+      } else {
+        // Loop or shuffle
+        tracks = shuffle([...tracks]);
+        playTrack(0);
+      }
+    }
+    
+    function prevTrack() {
+      if (currentIndex > 0) {
+        playTrack(currentIndex - 1);
+      } else {
+        playTrack(tracks.length - 1);
+      }
+    }
+    
+    function updateStatus() {
+      const status = document.getElementById('status');
+      if (isPlaying) {
+        status.textContent = '🎙️ LIVE AUTO-PLAYING';
+        status.className = 'status live';
+      } else {
+        status.textContent = 'Paused';
+        status.className = 'status';
+      }
+    }
+    
+    // Listen for messages from Audius embed (track ended)
+    window.addEventListener('message', function(e) {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        
+        // Audius sends pause/play/ended events
+        if (data.event === 'ended' || data.event === 'track-ended') {
+          nextTrack();
+        } else if (data.event === 'play') {
+          isPlaying = true;
+          trackStartTime = Date.now();
+          updateStatus();
+        } else if (data.event === 'pause') {
+          isPlaying = false;
+          if (progressInterval) clearInterval(progressInterval);
+          updateStatus();
+        }
+      } catch(err) {}
+    });
+    
+    // Load on start
+    loadPlaylist();
+  </script>
+</body>
+</html>
