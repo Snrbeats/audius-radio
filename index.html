@@ -496,8 +496,20 @@
       } catch(err) {}
     });
     
-    // Load on start
-    loadPlaylist();
+    // Load on start - auto play!
+    window.addEventListener('load', function() {
+      loadPlaylist().then(() => {
+        // Auto-start playing after loading
+        setTimeout(() => {
+          isPlaying = true;
+          document.getElementById('playBtn').textContent = '⏸️';
+          document.getElementById('artwork').classList.add('playing');
+          document.getElementById('status').textContent = '🎙️ LIVE AUTO-PLAYING';
+          document.getElementById('status').className = 'status live';
+          startProgress();
+        }, 500);
+      });
+    });
   </script>
 </body>
 </html>
