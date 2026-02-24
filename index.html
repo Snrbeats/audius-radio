@@ -159,6 +159,37 @@
   </div>
 
   <script>
+
+    function getApiKey() {
+      const fromQuery = new URLSearchParams(location.search).get('key');
+      if (fromQuery) {
+        localStorage.setItem('audiusApiKey', fromQuery);
+        return fromQuery;
+      }
+      const stored = localStorage.getItem('audiusApiKey');
+      if (stored) return stored;
+      if (window.AUDIUS_API_KEY) return window.AUDIUS_API_KEY;
+      return null;
+    }
+
+    async function fetchAudiusFallback() {
+      const key = getApiKey();
+      const headers = key ? { Authorization: `Bearer ${key}` } : {};
+      const url = 'https://api.audius.co/v1/tracks/trending?limit=50&app_name=ai-radio';
+      const res = await fetch(url, { headers, cache: 'no-store' });
+      if (!res.ok) throw new Error(`Audius API ${res.status}`);
+      const json = await res.json();
+      const data = json?.data || [];
+      if (!data.length) throw new Error('Audius API returned no tracks');
+      return data.map((t) => ({
+        id: t.id,
+        title: t.title,
+        artist: t.user?.name || 'Unknown',
+        duration: t.duration,
+        artwork: (t.artwork && (t.artwork['480x480'] || t.artwork['150x150'])) || '',
+        embedUrl: `https://audius.co/embed/track/${t.id}`,
+      }));
+    }
     let tracks = [];
     let filteredTracks = [];
     let currentIndex = 0;
@@ -194,10 +225,21 @@
       const loadingEl = document.getElementById('loading');
       try {
         const res = await fetch(new URL('playlist.json', location.href).toString(), { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (!Array.isArray(json) || !json.length) throw new Error('No tracks');
-        tracks = json;
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json) && json.length) {
+            tracks = json;
+            filteredTracks = tracks;
+            loadingEl.style.display = 'none';
+            document.getElementById('player').style.display = 'block';
+            renderPlaylist();
+            playTrack(currentIndex);
+            return;
+          }
+        }
+        // fallback to Audius API
+        const apiTracks = await fetchAudiusFallback();
+        tracks = apiTracks;
         filteredTracks = tracks;
         loadingEl.style.display = 'none';
         document.getElementById('player').style.display = 'block';
