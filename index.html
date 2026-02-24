@@ -361,24 +361,20 @@
       }
 
       const autoplayParam = track.embedUrl.includes('?') ? '&autoplay=true' : '?autoplay=true';
-      const embedSrc = track.embedUrl + autoplayParam;
       const frame = document.getElementById('playerFrame');
+      const embedSrc = track.embedUrl + autoplayParam;
       frame.src = embedSrc;
       frame.classList.add('player-visible');
-      frame.onload = () => hideStartOverlay();
       document.getElementById('artwork').classList.add('playing');
-      hideStartOverlay();
-      setTimeout(() => {
-        // if still no play, show overlay for user gesture
-        if (!isPlaying) showStartOverlay();
-      }, 1200);
+      showStartOverlay();
+      // Don't mark playing until we get a play event from iframe
 
       renderPlaylist();
       trackDuration = track.duration || 180;
       trackStartTime = Date.now();
-      isPlaying = true;
-      document.getElementById('playBtn').textContent = '⏸️';
-      startProgress();
+      isPlaying = false;
+      document.getElementById('playBtn').textContent = '▶️';
+      document.getElementById('progress').style.width = '0%';
       updateStatus();
       saveState();
     }
@@ -458,11 +454,15 @@
           nextTrack();
         } else if (data.event === 'play') {
           isPlaying = true;
+          hideStartOverlay();
           trackStartTime = Date.now();
+          document.getElementById('playBtn').textContent = '⏸️';
+          startProgress();
           updateStatus();
         } else if (data.event === 'pause') {
           isPlaying = false;
           if (progressInterval) clearInterval(progressInterval);
+          document.getElementById('playBtn').textContent = '▶️';
           updateStatus();
         }
       } catch(err) {}
@@ -470,16 +470,7 @@
 
     window.addEventListener('load', () => {
       loadState();
-      loadPlaylist().then(() => {
-        setTimeout(() => {
-          isPlaying = true;
-          document.getElementById('playBtn').textContent = '⏸️';
-          document.getElementById('artwork').classList.add('playing');
-          document.getElementById('status').textContent = '🎙️ LIVE AUTO-PLAYING';
-          document.getElementById('status').className = 'status live';
-          startProgress();
-        }, 400);
-      });
+      loadPlaylist();
     });
 
     document.getElementById('shuffleBtn').onclick = () => {
