@@ -223,7 +223,11 @@
 
     async function loadPlaylist() {
       const loadingEl = document.getElementById('loading');
+      const showError = (msg) => {
+        loadingEl.innerHTML = `<p>Error loading playlist: ${msg}</p>`;
+      };
       try {
+        // Try local playlist
         const res = await fetch(new URL('playlist.json', location.href).toString(), { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
@@ -237,7 +241,11 @@
             return;
           }
         }
-        // fallback to Audius API
+      } catch (err) {
+        console.warn('Local playlist fetch failed', err);
+      }
+      try {
+        // Fallback to Audius API trending
         const apiTracks = await fetchAudiusFallback();
         tracks = apiTracks;
         filteredTracks = tracks;
@@ -245,10 +253,29 @@
         document.getElementById('player').style.display = 'block';
         renderPlaylist();
         playTrack(currentIndex);
+        return;
       } catch (err) {
-        console.error('Playlist load error', err);
-        loadingEl.innerHTML = `<p>Error loading playlist: ${err?.message || err}</p>`;
+        console.warn('Audius API fallback failed', err);
       }
+      try {
+        // Final fallback: raw GitHub playlist
+        const gh = await fetch('https://raw.githubusercontent.com/Snrbeats/audius-radio/main/playlist.json', { cache: 'no-store' });
+        if (gh.ok) {
+          const json = await gh.json();
+          if (Array.isArray(json) && json.length) {
+            tracks = json;
+            filteredTracks = tracks;
+            loadingEl.style.display = 'none';
+            document.getElementById('player').style.display = 'block';
+            renderPlaylist();
+            playTrack(currentIndex);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('GitHub playlist fallback failed', err);
+      }
+      showError('No playlist available');
     }
 
     function formatDur(sec) {
